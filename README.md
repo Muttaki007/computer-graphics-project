@@ -76,5 +76,5 @@ A window titled **Traffic Signal Simulation** will open and the animation starts
 ## Author
 
 **Abdullah Al Muttaki Khan**
-Course: Computer Graphics
+Course: Computer Graphics Seassional
 Institution: Bangladesh Army Univercity Of Science & Technology (BAUST)
