@@ -1,80 +1,77 @@
-# Traffic Signal Simulation
+# Traffic Signal Simulation (PyOpenGL)
 
-A 2D computer graphics project built with **Python** and **PyOpenGL**. It simulates a road with a working traffic signal, moving cars, and a simple outdoor scene (sun, tree, house, grass).
+A simple 2D computer graphics project made with **Python**, **PyOpenGL** and **GLUT**.
+
+Cars travel in two lanes (the lower lane moves right, the upper lane moves left) and obey a traffic signal that cycles through green, yellow and red. Cars stop at the stop line on red or yellow, wait in a queue, and move again on green.
 
 ## Features
 
-- Traffic signal that cycles automatically: Green → Yellow → Red
-- Cars spawn at the left of the screen in random colors (red, blue, orange, purple)
-- Cars stop at the stop line when the light is yellow or red
-- Cars keep a safe distance from the car in front of them
-- Cars are removed once they leave the screen
-- Scenery: sun, tree, house, grass, road with a dashed center line
-
-## How it works
-
-| Part | Description |
-|------|-------------|
-| Signal timing | Green = 300 frames, Yellow = 100 frames, Red = 300 frames (one frame is about 15 ms) |
-| Car spawning | A new car appears roughly every 120 frames if there is space at the start of the road |
-| Car movement | Each car moves 2 pixels per frame unless it is blocked by the signal or the car ahead |
-| Window size | 800 x 500 pixels |
+- Two-way traffic with cars moving in opposite directions
+- Traffic signal that changes automatically (green → yellow → red)
+- Cars stop before the stop line and keep a safe gap from the car in front
+- Cars appear at random time intervals, so the traffic looks natural
+- Simple scene with sun, tree, house, grass and street
 
 ## Computer graphics concepts used
 
-- 2D orthographic projection (`gluOrtho2D`)
-- Drawing primitives: `GL_QUADS`, `GL_TRIANGLES`, `GL_TRIANGLE_FAN`
-- Geometric transformations (`glTranslatef`)
-- Matrix stack (`glPushMatrix` / `glPopMatrix`)
-- Double buffering (`glutSwapBuffers`)
-- Animation using a timer callback (`glutTimerFunc`)
-- Building complex objects (cars, house, tree, signal) from basic shapes
+| Concept | Where it is used |
+|---|---|
+| Basic primitives (`GL_QUADS`, `GL_TRIANGLES`, `GL_TRIANGLE_FAN`) | Car, house, tree, signal, street |
+| Parametric circle drawing (`cos`, `sin`) | Sun, wheels, signal lamps |
+| Translation (`glPushMatrix`, `glTranslatef`, `glPopMatrix`) | Placing every object and moving the cars |
+| Animation with `glutTimerFunc` | `update()` function runs every 15 ms |
+| Double buffering (`GLUT_DOUBLE`, `glutSwapBuffers`) | Smooth, flicker-free animation |
+| 2D projection (`gluOrtho2D`) | 800 x 500 coordinate system |
+
+## How it works
+
+1. **Signal:** the variable `light` stores the state (`0` = green, `1` = yellow, `2` = red). A counter changes the state after a fixed number of timer ticks.
+2. **Cars:** each lane is a list, and every car is stored as `[x_position, color]`.
+3. **Movement:** every tick a car moves by `SPEED` pixels. A car is blocked if
+   - the light is not green and the car's front reaches the stop line, or
+   - the car in front is too close.
+4. **Spawning:** a new car enters a lane only when the entry point is free, after a random delay.
 
 ## Requirements
 
-- Python 3.x
+- Python 3
 - PyOpenGL
 
-Install the library with:
-
-```
+```bash
 pip install PyOpenGL PyOpenGL_accelerate
 ```
 
-> **Windows note:** If you get an error like `NullFunctionError: glutInit`, your system is missing the GLUT library. Install **freeglut** (or install a ready-made wheel, for example `pip install PyOpenGL-accelerate` along with the freeglut DLL placed in your Python folder or `System32`).
+> On Windows, if GLUT does not work, install `freeglut` or download a PyOpenGL wheel that includes it.
 
-## How to run
+## Run
 
-1. Download or clone this repository.
-2. Open a terminal in the project folder.
-3. Run:
-
-```
-python traffic_signal.py
+```bash
+python traffic_signal_opengl.py
 ```
 
-(Replace `traffic_signal.py` with the actual name of your Python file.)
+## Customize
 
-A window titled **Traffic Signal Simulation** will open and the animation starts automatically.
+You can change these values at the top of the file:
+
+| Variable | Meaning |
+|---|---|
+| `SPEED` | How fast the cars move |
+| `GREEN_TIME`, `YELLOW_TIME`, `RED_TIME` | How long each light stays on (in timer ticks) |
+| `CAR_W` | Width of a car |
+| `randint(180, 320)` in `update()` | Time gap between new cars (bigger number = fewer cars) |
 
 ## Project structure
 
 ```
 .
-├── traffic_signal.py   # Main source code
-└── README.md           # Project documentation
+├── traffic_signal_opengl.py   # main program
+├── screenshot.png             # screenshot of the output
+└── README.md
 ```
 
-## Code overview
+## Future improvements
 
-- `drawRectangle`, `drawTriangle`, `drawCircle`: basic shape helpers
-- `drawCar`, `drawSignal`, `drawTree`, `drawHouse`: objects built from the basic shapes
-- `drawScene`: draws the whole scene and every car
-- `update`: runs every frame to change the light, spawn cars, move cars, and remove cars
-- `showScreen`: display callback that clears the screen and draws the scene
-
-## Author
-
-**Abdullah Al Muttaki Khan**
-Course: Computer Graphics Seassional
-Institution: Bangladesh Army Univercity Of Science & Technology (BAUST)
+- Pedestrian crossing
+- Keyboard control to change the signal manually
+- Countdown timer on the signal
+- Day and night mode
