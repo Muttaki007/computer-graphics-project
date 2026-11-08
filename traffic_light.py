@@ -7,17 +7,24 @@ import random
 width = 800
 height = 500
 
-STOP_X = 420            
-SPEED = 2               
-CAR_W = 80            
-GREEN_TIME = 300       
+SIGNAL_X = 450          
+STOP_X_RIGHT = 420      
+STOP_X_LEFT = 480       
+SPEED = 2              
+CAR_W = 80              
+GREEN_TIME = 300        
 YELLOW_TIME = 100
 RED_TIME = 300
 
-light = 0               
+light = 0              
 lightTimer = 0
-spawnTimer = 0
-cars = []               
+
+carsRight = []        
+carsLeft = []         
+spawnTimerRight = 0
+spawnTimerLeft = 0
+spawnLimitRight = 150
+spawnLimitLeft = 230
 carColors = [(0.85, 0.1, 0.1), (0.1, 0.3, 0.85), (0.95, 0.65, 0.1), (0.55, 0.2, 0.7)]
 
 
@@ -47,23 +54,29 @@ def drawCircle(r):
     glEnd()
 
 
-def drawCar(color):
+def drawCar(color, d):
     # body
     glPushMatrix()
     glColor3f(color[0], color[1], color[2])
     drawRectangle(CAR_W, 25)
     glPopMatrix()
-    # cabin
+    # cabin 
     glPushMatrix()
-    glTranslatef(0, 20, 0)
+    glTranslatef(-d * 6, 20, 0)
     glColor3f(color[0] * 0.8, color[1] * 0.8, color[2] * 0.8)
     drawRectangle(44, 18)
     glPopMatrix()
     # window
     glPushMatrix()
-    glTranslatef(0, 20, 0)
+    glTranslatef(-d * 6, 20, 0)
     glColor3f(0.7, 0.9, 1.0)
     drawRectangle(34, 11)
+    glPopMatrix()
+    # headlight at the front
+    glPushMatrix()
+    glTranslatef(d * (CAR_W / 2 - 4), 3, 0)
+    glColor3f(1.0, 1.0, 0.6)
+    drawRectangle(8, 8)
     glPopMatrix()
     # wheels
     for wx in (-22, 22):
@@ -77,24 +90,24 @@ def drawCar(color):
 def drawSignal():
     # pole
     glPushMatrix()
-    glTranslatef(STOP_X + 30, 235, 0)
+    glTranslatef(SIGNAL_X, 235, 0)
     glColor3f(0.2, 0.2, 0.2)
     drawRectangle(8, 170)
     glPopMatrix()
     # signal box
     glPushMatrix()
-    glTranslatef(STOP_X + 30, 330, 0)
+    glTranslatef(SIGNAL_X, 330, 0)
     glColor3f(0.1, 0.1, 0.1)
     drawRectangle(44, 120)
     glPopMatrix()
-    # three lamps
+    # three lamps: red , yellow, green 
     lampY = [365, 330, 295]
     onColor = [(1.0, 0.0, 0.0), (1.0, 0.9, 0.0), (0.0, 0.9, 0.0)]
     offColor = (0.25, 0.25, 0.25)
     lampIndex = [2, 1, 0]   
     for i in range(3):
         glPushMatrix()
-        glTranslatef(STOP_X + 30, lampY[i], 0)
+        glTranslatef(SIGNAL_X, lampY[i], 0)
         if light == lampIndex[i]:
             glColor3f(onColor[i][0], onColor[i][1], onColor[i][2])
         else:
@@ -157,11 +170,17 @@ def drawScene():
         glColor3f(1, 1, 1)
         drawRectangle(30, 4)
         glPopMatrix()
-    # stop line
+    # stop line of the lower lane
     glPushMatrix()
-    glTranslatef(STOP_X, 75, 0)
+    glTranslatef(STOP_X_RIGHT, 75, 0)
     glColor3f(1, 1, 1)
-    drawRectangle(6, 50)
+    drawRectangle(6, 46)
+    glPopMatrix()
+    # stop line of the upper lane
+    glPushMatrix()
+    glTranslatef(STOP_X_LEFT, 125, 0)
+    glColor3f(1, 1, 1)
+    drawRectangle(6, 46)
     glPopMatrix()
     # sun
     glPushMatrix()
@@ -174,18 +193,53 @@ def drawScene():
     drawHouse(680, 250)
     drawSignal()
 
-    # all cars
-    for car in cars:
+    # cars of the lower lane 
+    for car in carsRight:
         glPushMatrix()
         glTranslatef(car[0], 80, 0)
-        drawCar(car[1])
+        drawCar(car[1], 1)
+        glPopMatrix()
+    # cars of the upper lane 
+    for car in carsLeft:
+        glPushMatrix()
+        glTranslatef(car[0], 130, 0)
+        drawCar(car[1], -1)
         glPopMatrix()
 
 
-def update(value):
-    global light, lightTimer, spawnTimer
+def spawnCar(lane, d, startX):
+    # add a new car 
+    for c in lane:
+        if (c[0] - startX) * d <= CAR_W + 10:
+            return False
+    lane.append([startX, random.choice(carColors)])
+    return True
 
-    # 1) change the signal
+
+def moveLane(lane, d, stopX):
+    
+    lane.sort(key=lambda c: -c[0] * d)         
+    for i in range(len(lane)):
+        nextX = lane[i][0] + d * SPEED
+        front = lane[i][0] + d * CAR_W / 2
+        blocked = False
+
+       
+        if light != 0 and (front - stopX) * d <= 0 and (front + d * SPEED - stopX) * d > 0:
+            blocked = True
+       
+        if i > 0 and (lane[i - 1][0] - nextX) * d < CAR_W + 10:
+            blocked = True
+
+        if not blocked:
+            lane[i][0] = nextX
+
+
+def update(value):
+    global light, lightTimer
+    global spawnTimerRight, spawnTimerLeft, spawnLimitRight, spawnLimitLeft
+
+    #change the signal
     lightTimer += 1
     if light == 0 and lightTimer >= GREEN_TIME:
         light = 1
@@ -197,32 +251,26 @@ def update(value):
         light = 0
         lightTimer = 0
 
-    # 2) create a new car
-    spawnTimer += 1
-    if spawnTimer >= 120:
-        if len(cars) == 0 or min(c[0] for c in cars) > 30:
-            cars.append([-60, random.choice(carColors)])
-            spawnTimer = 0
+    #create new cars 
+    spawnTimerRight += 1
+    if spawnTimerRight >= spawnLimitRight:
+        if spawnCar(carsRight, 1, -60):
+            spawnTimerRight = 0
+            spawnLimitRight = random.randint(180, 320)
 
-    # 3) move the cars 
-    cars.sort(key=lambda c: -c[0])
-    for i in range(len(cars)):
-        nextX = cars[i][0] + SPEED
-        front = cars[i][0] + CAR_W / 2
-        blocked = False
+    spawnTimerLeft += 1
+    if spawnTimerLeft >= spawnLimitLeft:
+        if spawnCar(carsLeft, -1, width + 60):
+            spawnTimerLeft = 0
+            spawnLimitLeft = random.randint(180, 320)
 
-        # stop before the line when the light is yellow or red
-        if light != 0 and front <= STOP_X and front + SPEED > STOP_X:
-            blocked = True
-        # keep a safe gap from the car 
-        if i > 0 and cars[i - 1][0] - nextX < CAR_W + 10:
-            blocked = True
+    #move the cars of both lanes
+    moveLane(carsRight, 1, STOP_X_RIGHT)
+    moveLane(carsLeft, -1, STOP_X_LEFT)
 
-        if not blocked:
-            cars[i][0] = nextX
-
-    # 4) remove cars that left the screen
-    cars[:] = [c for c in cars if c[0] < width + 60]
+    #remove cars that left the screen
+    carsRight[:] = [c for c in carsRight if c[0] < width + 60]
+    carsLeft[:] = [c for c in carsLeft if c[0] > -60]
 
     glutPostRedisplay()
     glutTimerFunc(15, update, 0)
