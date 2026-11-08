@@ -4,8 +4,6 @@ A simple 2D computer graphics project made with **Python**, **PyOpenGL** and **G
 
 Cars travel in two lanes (the lower lane moves right, the upper lane moves left) and obey a traffic signal that cycles through green, yellow and red. Cars stop at the stop line on red or yellow, wait in a queue, and move again on green.
 
-![Screenshot](screenshot.png)
-
 ## Features
 
 - Two-way traffic with cars moving in opposite directions
@@ -76,8 +74,7 @@ You can change these values at the top of the file:
 
 ```
 .
-├── traffic_signal_opengl.py   # main program
-├── screenshot.png             # screenshot of the output
+├── traffic_signal_opengl.py   # main program   
 └── README.md
 ```
 
