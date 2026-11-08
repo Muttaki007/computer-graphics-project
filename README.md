@@ -4,13 +4,22 @@ A simple 2D computer graphics project made with **Python**, **PyOpenGL** and **G
 
 Cars travel in two lanes (the lower lane moves right, the upper lane moves left) and obey a traffic signal that cycles through green, yellow and red. Cars stop at the stop line on red or yellow, wait in a queue, and move again on green.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - Two-way traffic with cars moving in opposite directions
 - Traffic signal that changes automatically (green → yellow → red)
 - Cars stop before the stop line and keep a safe gap from the car in front
 - Cars appear at random time intervals, so the traffic looks natural
-- Simple scene with sun, tree, house, grass and street
+- Day and night mode with an on-screen toggle button (sun or moon with stars, darker colors, car headlights and a lit window at night)
+- Simple scene with tree, house, grass and street
+
+## Controls
+
+Click the **Switch to Night / Switch to Day** button in the top right corner of the window to change between day and night mode.
+
+The traffic light changes automatically.
 
 ## Computer graphics concepts used
 
@@ -21,6 +30,7 @@ Cars travel in two lanes (the lower lane moves right, the upper lane moves left)
 | Translation (`glPushMatrix`, `glTranslatef`, `glPopMatrix`) | Placing every object and moving the cars |
 | Animation with `glutTimerFunc` | `update()` function runs every 15 ms |
 | Double buffering (`GLUT_DOUBLE`, `glutSwapBuffers`) | Smooth, flicker-free animation |
+| Mouse input (`glutMouseFunc`) | Day/night toggle button |
 | 2D projection (`gluOrtho2D`) | 800 x 500 coordinate system |
 
 ## How it works
@@ -59,6 +69,8 @@ You can change these values at the top of the file:
 | `GREEN_TIME`, `YELLOW_TIME`, `RED_TIME` | How long each light stays on (in timer ticks) |
 | `CAR_W` | Width of a car |
 | `randint(180, 320)` in `update()` | Time gap between new cars (bigger number = fewer cars) |
+| `shade` (inside `toggleDayNight()`) | How dark the colors become at night |
+| `BTN_X`, `BTN_Y`, `BTN_W`, `BTN_H` | Position and size of the day/night button |
 
 ## Project structure
 
@@ -69,9 +81,3 @@ You can change these values at the top of the file:
 └── README.md
 ```
 
-## Future improvements
-
-- Pedestrian crossing
-- Keyboard control to change the signal manually
-- Countdown timer on the signal
-- Day and night mode
