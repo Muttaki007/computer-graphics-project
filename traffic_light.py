@@ -7,11 +7,12 @@ import random
 width = 800
 height = 500
 
+#traffic signal settings
 SIGNAL_X = 450          
-STOP_X_RIGHT = 420      
+STOP_X_RIGHT = 420     
 STOP_X_LEFT = 480       
-SPEED = 2              
-CAR_W = 80              
+SPEED = 2               
+CAR_W = 80             
 GREEN_TIME = 300        
 YELLOW_TIME = 100
 RED_TIME = 300
@@ -19,15 +20,34 @@ RED_TIME = 300
 light = 0              
 lightTimer = 0
 
-carsRight = []        
-carsLeft = []         
+carsRight = []         
+carsLeft = []           
 spawnTimerRight = 0
 spawnTimerLeft = 0
 spawnLimitRight = 150
 spawnLimitLeft = 230
 carColors = [(0.85, 0.1, 0.1), (0.1, 0.3, 0.85), (0.95, 0.65, 0.1), (0.55, 0.2, 0.7)]
 
+#day / night settings 
+isNight = False
+shade = 1.0            
+stars = [(50, 300), (200, 460), (300, 380), (420, 450), (520, 410),
+         (600, 470), (720, 440), (760, 330), (350, 300), (560, 330)]
 
+
+# day / night button 
+BTN_X = 700
+BTN_Y = 465
+BTN_W = 150
+BTN_H = 34
+
+
+def setColor(r, g, b):
+    
+    glColor3f(r * shade, g * shade, b * shade)
+
+
+# basic shapes
 def drawRectangle(w, h):
     glBegin(GL_QUADS)
     glVertex2f(-w / 2, -h / 2)
@@ -54,24 +74,38 @@ def drawCircle(r):
     glEnd()
 
 
+def drawText(x, y, text):
+    glRasterPos2f(x, y)
+    for ch in text:
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, ord(ch))
+
+
+#  objects built from the basic shapes 
 def drawCar(color, d):
     # body
     glPushMatrix()
-    glColor3f(color[0], color[1], color[2])
+    setColor(color[0], color[1], color[2])
     drawRectangle(CAR_W, 25)
     glPopMatrix()
     # cabin 
     glPushMatrix()
     glTranslatef(-d * 6, 20, 0)
-    glColor3f(color[0] * 0.8, color[1] * 0.8, color[2] * 0.8)
+    setColor(color[0] * 0.8, color[1] * 0.8, color[2] * 0.8)
     drawRectangle(44, 18)
     glPopMatrix()
     # window
     glPushMatrix()
     glTranslatef(-d * 6, 20, 0)
-    glColor3f(0.7, 0.9, 1.0)
+    setColor(0.7, 0.9, 1.0)
     drawRectangle(34, 11)
     glPopMatrix()
+    # headlight light beam 
+    if isNight:
+        glPushMatrix()
+        glTranslatef(d * (CAR_W / 2 + 18), 3, 0)
+        glColor3f(0.7, 0.7, 0.35)
+        drawRectangle(36, 10)
+        glPopMatrix()
     # headlight at the front
     glPushMatrix()
     glTranslatef(d * (CAR_W / 2 - 4), 3, 0)
@@ -91,7 +125,7 @@ def drawSignal():
     # pole
     glPushMatrix()
     glTranslatef(SIGNAL_X, 235, 0)
-    glColor3f(0.2, 0.2, 0.2)
+    setColor(0.2, 0.2, 0.2)
     drawRectangle(8, 170)
     glPopMatrix()
     # signal box
@@ -100,11 +134,11 @@ def drawSignal():
     glColor3f(0.1, 0.1, 0.1)
     drawRectangle(44, 120)
     glPopMatrix()
-    # three lamps: red , yellow, green 
+    # three lamps
     lampY = [365, 330, 295]
     onColor = [(1.0, 0.0, 0.0), (1.0, 0.9, 0.0), (0.0, 0.9, 0.0)]
     offColor = (0.25, 0.25, 0.25)
-    lampIndex = [2, 1, 0]   
+    lampIndex = [2, 1, 0]  
     for i in range(3):
         glPushMatrix()
         glTranslatef(SIGNAL_X, lampY[i], 0)
@@ -119,12 +153,12 @@ def drawSignal():
 def drawTree(x, y):
     glPushMatrix()
     glTranslatef(x, y, 0)
-    glColor3f(0.55, 0.27, 0.07)
+    setColor(0.55, 0.27, 0.07)
     drawRectangle(20, 80)
     glPopMatrix()
     glPushMatrix()
     glTranslatef(x, y + 80, 0)
-    glColor3f(0.0, 0.6, 0.0)
+    setColor(0.0, 0.6, 0.0)
     drawTriangle(90, 90)
     glPopMatrix()
 
@@ -133,80 +167,159 @@ def drawHouse(x, y):
     # body
     glPushMatrix()
     glTranslatef(x, y, 0)
-    glColor3f(0.9, 0.65, 0.4)
+    setColor(0.9, 0.65, 0.4)
     drawRectangle(140, 100)
     glPopMatrix()
     # roof
     glPushMatrix()
     glTranslatef(x, y + 85, 0)
-    glColor3f(0.75, 0.1, 0.1)
+    setColor(0.75, 0.1, 0.1)
     drawTriangle(180, 70)
     glPopMatrix()
     # door
     glPushMatrix()
     glTranslatef(x, y - 25, 0)
-    glColor3f(0.35, 0.2, 0.1)
+    setColor(0.35, 0.2, 0.1)
     drawRectangle(30, 50)
     glPopMatrix()
+    # lit window (only at night)
+    if isNight:
+        glPushMatrix()
+        glTranslatef(x + 40, y + 15, 0)
+        glColor3f(1.0, 0.9, 0.4)
+        drawRectangle(24, 24)
+        glPopMatrix()
+
+
+def drawSky():
+    if isNight:
+        # stars
+        for s in stars:
+            glPushMatrix()
+            glTranslatef(s[0], s[1], 0)
+            glColor3f(1, 1, 1)
+            drawCircle(2)
+            glPopMatrix()
+        # moon 
+        glPushMatrix()
+        glTranslatef(100, 430, 0)
+        glColor3f(0.95, 0.95, 0.85)
+        drawCircle(35)
+        glPopMatrix()
+        glPushMatrix()
+        glTranslatef(116, 440, 0)
+        glColor3f(0.04, 0.05, 0.18)
+        drawCircle(30)
+        glPopMatrix()
+    else:
+        # sun
+        glPushMatrix()
+        glTranslatef(100, 430, 0)
+        glColor3f(1.0, 0.85, 0.0)
+        drawCircle(40)
+        glPopMatrix()
+
+
+def drawButton():
+    # border
+    glPushMatrix()
+    glTranslatef(BTN_X, BTN_Y, 0)
+    glColor3f(1, 1, 1)
+    drawRectangle(BTN_W + 4, BTN_H + 4)
+    glPopMatrix()
+    # button body and text 
+    glPushMatrix()
+    glTranslatef(BTN_X, BTN_Y, 0)
+    if isNight:
+        glColor3f(0.95, 0.85, 0.4)
+    else:
+        glColor3f(0.15, 0.15, 0.35)
+    drawRectangle(BTN_W, BTN_H)
+    glPopMatrix()
+    if isNight:
+        glColor3f(0, 0, 0)
+        drawText(BTN_X - 45, BTN_Y - 4, "Switch to Day")
+    else:
+        glColor3f(1, 1, 1)
+        drawText(BTN_X - 50, BTN_Y - 4, "Switch to Night")
 
 
 def drawScene():
+    drawSky()
     # grass
     glPushMatrix()
     glTranslatef(400, 100, 0)
-    glColor3f(0.35, 0.75, 0.3)
+    setColor(0.35, 0.75, 0.3)
     drawRectangle(800, 200)
     glPopMatrix()
     # street
     glPushMatrix()
     glTranslatef(400, 100, 0)
-    glColor3f(0.3, 0.3, 0.3)
+    setColor(0.3, 0.3, 0.3)
     drawRectangle(800, 100)
     glPopMatrix()
     # dashed middle line
     for x in range(20, 800, 60):
         glPushMatrix()
         glTranslatef(x, 100, 0)
-        glColor3f(1, 1, 1)
+        setColor(1, 1, 1)
         drawRectangle(30, 4)
         glPopMatrix()
     # stop line of the lower lane
     glPushMatrix()
     glTranslatef(STOP_X_RIGHT, 75, 0)
-    glColor3f(1, 1, 1)
+    setColor(1, 1, 1)
     drawRectangle(6, 46)
     glPopMatrix()
     # stop line of the upper lane
     glPushMatrix()
     glTranslatef(STOP_X_LEFT, 125, 0)
-    glColor3f(1, 1, 1)
+    setColor(1, 1, 1)
     drawRectangle(6, 46)
-    glPopMatrix()
-    # sun
-    glPushMatrix()
-    glTranslatef(100, 430, 0)
-    glColor3f(1.0, 0.85, 0.0)
-    drawCircle(40)
     glPopMatrix()
 
     drawTree(170, 240)
     drawHouse(680, 250)
     drawSignal()
 
-    # cars of the lower lane 
+    # cars of the lower lane (moving right)
     for car in carsRight:
         glPushMatrix()
         glTranslatef(car[0], 80, 0)
         drawCar(car[1], 1)
         glPopMatrix()
-    # cars of the upper lane 
+    # cars of the upper lane (moving left)
     for car in carsLeft:
         glPushMatrix()
         glTranslatef(car[0], 130, 0)
         drawCar(car[1], -1)
         glPopMatrix()
 
+    drawButton()
 
+
+#mouse control (day / night button)
+def toggleDayNight():
+    global isNight, shade
+    isNight = not isNight
+    if isNight:
+        shade = 0.45
+    else:
+        shade = 1.0
+
+
+def mouse(button, state, x, y):
+    
+    mx = x * width / glutGet(GLUT_WINDOW_WIDTH)
+    my = height - y * height / glutGet(GLUT_WINDOW_HEIGHT)
+
+    if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+        if abs(mx - BTN_X) <= BTN_W / 2 and abs(my - BTN_Y) <= BTN_H / 2:
+            toggleDayNight()
+            glutPostRedisplay()
+
+
+#  animation logic
 def spawnCar(lane, d, startX):
     # add a new car 
     for c in lane:
@@ -218,16 +331,16 @@ def spawnCar(lane, d, startX):
 
 def moveLane(lane, d, stopX):
     
-    lane.sort(key=lambda c: -c[0] * d)         
+    lane.sort(key=lambda c: -c[0] * d)          
     for i in range(len(lane)):
         nextX = lane[i][0] + d * SPEED
         front = lane[i][0] + d * CAR_W / 2
         blocked = False
 
-       
+        # stop before the line 
         if light != 0 and (front - stopX) * d <= 0 and (front + d * SPEED - stopX) * d > 0:
             blocked = True
-       
+        # keep a safe gap from the car 
         if i > 0 and (lane[i - 1][0] - nextX) * d < CAR_W + 10:
             blocked = True
 
@@ -239,7 +352,7 @@ def update(value):
     global light, lightTimer
     global spawnTimerRight, spawnTimerLeft, spawnLimitRight, spawnLimitLeft
 
-    #change the signal
+#change the signal automatically
     lightTimer += 1
     if light == 0 and lightTimer >= GREEN_TIME:
         light = 1
@@ -251,7 +364,7 @@ def update(value):
         light = 0
         lightTimer = 0
 
-    #create new cars 
+ # create new cars 
     spawnTimerRight += 1
     if spawnTimerRight >= spawnLimitRight:
         if spawnCar(carsRight, 1, -60):
@@ -264,11 +377,11 @@ def update(value):
             spawnTimerLeft = 0
             spawnLimitLeft = random.randint(180, 320)
 
-    #move the cars of both lanes
+#move the cars of both lanes
     moveLane(carsRight, 1, STOP_X_RIGHT)
     moveLane(carsLeft, -1, STOP_X_LEFT)
 
-    #remove cars that left the screen
+# remove cars that left the screen
     carsRight[:] = [c for c in carsRight if c[0] < width + 60]
     carsLeft[:] = [c for c in carsLeft if c[0] > -60]
 
@@ -277,7 +390,10 @@ def update(value):
 
 
 def showScreen():
-    glClearColor(0.53, 0.81, 0.92, 1.0)
+    if isNight:
+        glClearColor(0.04, 0.05, 0.18, 1.0)     # dark blue sky
+    else:
+        glClearColor(0.53, 0.81, 0.92, 1.0)     # light blue sky
     glClear(GL_COLOR_BUFFER_BIT)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -294,5 +410,6 @@ glutInitWindowSize(width, height)
 glutInitWindowPosition(100, 100)
 glutCreateWindow(b"Traffic Signal Simulation")
 glutDisplayFunc(showScreen)
+glutMouseFunc(mouse)
 glutTimerFunc(0, update, 0)
 glutMainLoop()
